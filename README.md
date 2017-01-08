@@ -3,13 +3,13 @@
 python wrapper for darknet yolo detector
 
 ## Requirements
-opencv
-cuda (edit Makefile if not using)
-cudnn (edit Makefile if not using)
-learnt weight file to run the demo. see demo.py.
+* opencv
+* cuda (edit Makefile if not using)
+* cudnn (edit Makefile if not using)
+* learnt weight file to run the demo. see demo.py.
 
 ## Quick start
-1. build the python module as follow. 
+1. build the python module as follow.
      ```
      $ git clone --recursive https://github.com/yukikawana/pyolo.git
      $ cd pyolo
