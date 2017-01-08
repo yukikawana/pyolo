@@ -10,11 +10,11 @@ python wrapper for darknet yolo detector
 
 ## Quick start
 1. build the python module as follow.  
-     ```
-     $ git clone --recursive https://github.com/yukikawana/pyolo.git  
-     $ cd pyolo  
-     $ make  
-     ```
+    ```
+    $ git clone --recursive https://github.com/yukikawana/pyolo.git  
+    $ cd pyolo  
+    $ make  
+    ```
 2. get the learnt weight of yolo. 
      ```
      $ wget http://pjreddie.com/media/files/yolo.weights
