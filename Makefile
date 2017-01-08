@@ -18,13 +18,14 @@ OBJDIR=./obj/
 CC=gcc
 GCC=g++
 NVCC=nvcc 
-OPTS=-Ofast
+OPTS=-Ofast -w
 LDFLAGS= -lm -pthread 
 COMMON= 
 CFLAGS=-fPIC -Wall -Wfatal-errors 
 
 ifeq ($(DEBUG), 1) 
-OPTS=-O0 -g
+# OPTS=-O0 -g
+OPTS= -g
 endif
 
 CFLAGS+=$(OPTS)
@@ -61,9 +62,9 @@ all: obj $(tn).so
 
 CVFLAGS= `pkg-config --libs opencv` 
 BOOSTFLAGS= -lboost_python -lboost_numpy
-
+export PATH := /usr/local/cuda/bin:$(PATH)
 $(tn).so: $(OBJS)
-	g++  -DGPU -I/usr/local/cuda/include/ -I/usr/include/python2.7 -I$(shell pwd)/darknet/src  -Wall -fPIC  -Ofast -c ./src/$(tn).cpp -o obj/$(tn).o
+	g++ -g -w -I/usr/local/cuda/include/ -I/usr/include/python2.7 -I$(shell pwd)/darknet/src  -Wall -fPIC  -Ofast -c ./src/$(tn).cpp -o obj/$(tn).o
 	$(GCC) -shared -Wl,-soname,$@ -o $@ $^ ./obj/$(tn).o $(BOOSTFLAGS) $(CVFLAGS)  $(LDFLAGS)
 
 
@@ -80,4 +81,4 @@ obj:
 .PHONY: clean
 
 clean:
-	rm -rf $(OBJS) $(tn).so
+	rm -rf $(OBJS) $(tn).so  $(OBJDIR)$(tn).o
