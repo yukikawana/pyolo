@@ -3,10 +3,13 @@
 python wrapper for darknet yolo detector
 
 ## Requirements
-* opencv
+* python 2.x
+* opencv (to run demo.py)
 * cuda (edit Makefile if not using)
 * cudnn (edit Makefile if not using)
-* learnt weight file to run the demo. see demo.py.
+* boost numpy
+* boost python
+* learnt weight file to run the demo.
 
 ## Quick start
 1. build the python module as follow.  
