@@ -31,13 +31,14 @@ python wrapper for darknet yolo detector
      
      pyolo.init('coco_pyolo.data', './darknet/cfg/yolo.cfg', 'yolo.weights')
      img = cv2.imread('./darknet/data/person.jpg')
-     result = pyolo.predict(img)
-     left = result[2]
-     top = result[4]
-     right = result[3]
-     bottom = result[5]
+     pyolo.predict(img)
+     result_by_id = result[0]
+     left = result_by_id[2]
+     top = result_by_id[4]
+     right = result_by_id[3]
+     bottom = result_by_id[5]
      cv2.rectangle(img, (left, top), (right, bottom), (0, 0, 255), 2)
-     cv2.imshow('result', img)
+     cv2.imshow('detected object', img)
      ```
      see more example in demo.py
 

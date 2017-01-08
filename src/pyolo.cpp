@@ -37,7 +37,7 @@ np::ndarray predict(np::ndarray &bpim){
 	for(k= 2; k > -1; --k){//give image channels are in BGR order, so here it flips to RGB order.
 		for(i = 0; i < h; ++i){
 			for(j = 0; j < w; ++j){
-				out.data[count++] = ((float)*(data + k*strides[2]+ i * strides[0] +j * strides[1]))/255.;//convert image data from boost ndarray type to darknet image type.
+				out.data[count++] = ((float)(data[ k*strides[2]+ i * strides[0] +j * strides[1]]))/255.;//convert image data from boost ndarray type to darknet image type.
 			}
 		}
 	}
@@ -49,13 +49,16 @@ np::ndarray predict(np::ndarray &bpim){
 		//[class id][confidence][left][right][top][bottom]...
 		printf("number_of_objects = %d\n", number_of_objects);
 
-		np::ndarray b = np::zeros(bp::make_tuple(number_of_objects*6), np::dtype::get_builtin<int>());
+		np::ndarray b = np::zeros(bp::make_tuple(number_of_objects,6), np::dtype::get_builtin<int>());
 		const long int* bs= b.get_strides();
 		int* data = (int*)b.get_data();
 
-		for(int i = 0; i< number_of_objects*6; i++){
-			data[i] = result[i];//convert darknet image type to boost ndarray type.
+		for(int i = 0; i< number_of_objects; i++){
+			for(int j = 0; j< 6; j++){
+				b[i][j] = result[i*6+j];//convert darknet image type to boost ndarray type.
+			}
 		}
+
 
 		free_image(out);
 

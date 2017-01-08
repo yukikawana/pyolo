@@ -16,8 +16,8 @@ while(cap0.isOpened()):
     if not len(result) > 0:  # if not object is detected continue
         continue
 
-    for id in range(len(result) / 6):
-        result_by_id = result[id * 6:(id + 1) * 6]
+    for id in range(len(result)):
+        result_by_id = result[id]
         if min(result_by_id) < 0:
             continue
 
