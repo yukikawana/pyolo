@@ -4,80 +4,72 @@
 #include <opencv2/core/core.hpp>
 #include <string.h>
 #include <pthread.h>
-extern "C" {
+
+extern "C"{
 #include <image.h>
+void cinit(const char* label_info_file, const char* net_structure_file, const char* weight);
+int get_number_of_objects_in_image(image *im);
+void get_object_info(int arr[]);
 }
-extern "C" void cinit(const char* dc, const char* cf, const char* wf); 
-extern "C" int cpredict1(image *im);
-extern "C" void cpredict2(int arr[]);
+
 namespace bp = boost::python;
 namespace np = boost::numpy; 
 using namespace std;
-pthread_mutex_t mutex2;
-void init(string dc, string cf, string wf)
-{
-  cinit(dc.c_str(), cf.c_str(), wf.c_str());
+
+void init(string label_info_file, string net_structure_file, string weight){
+	printf("initialize the net");
+	cinit(label_info_file.c_str(), net_structure_file.c_str(), weight.c_str());
+	printf("initialization done");
 }
 
 np::ndarray predict(np::ndarray &bpim){
+	int h = bpim.shape(0);
+	int w = bpim.shape(1);
+	int c = bpim.shape(2);
 	
-  printf("convert ");
-  printf("%d\n", bpim.shape(0));
-  printf("%d\n", bpim.shape(1));
-  printf("%d\n", bpim.shape(2));
-  printf("convert done");
-  int h = bpim.shape(0);
-  int w = bpim.shape(1);
-  int c = bpim.shape(2);
-  //pthread_mutex_lock(&mutex2);   
-  image out = make_image(w, h, c);
-  printf("mage out");
-  int i, j, k, count=0;;
-  const long int* strides = bpim.get_strides();
-  unsigned char* data = (unsigned char*)bpim.get_data();
-  const int rgb[3]={2,1,0};
-  for(k= 0; k < c; ++k){
-    for(i = 0; i < h; ++i){
-      for(j = 0; j < w; ++j){
-out.data[count++] = ((float)*(data + rgb[k]*strides[2]+ i * strides[0] +j * strides[1]))/255.;
-      }
-    }
-  }
-  printf("convert image done");
-  int retlen=cpredict1(&out);
- if(retlen>0){
-      int ret[retlen*6]={0};
-      cpredict2(ret);
-      printf("retlen = %d\n", retlen);
-      np::ndarray b = np::zeros(bp::make_tuple(retlen*6), np::dtype::get_builtin<int>());
-      printf("nd %d\n",b.get_nd());
-  const long int* bs= b.get_strides();
-  int* data = (int*)b.get_data();
-      printf("define b\n");
-      printf("ret len=%d",(int)retlen);
-      for(int i = 0; i< retlen*6; i++)
-	{  
-	  //*(data+i*bs[0]) = ret[i];
-	  data[i] = ret[i];
-	  if(i%6==0)printf(":::::::::::\n");
-	  printf("a = %d\n",ret[i]);
+	image out = make_image(w, h, c);
+	
+	int i, j, k, count=0;;
+	
+	const long int* strides = bpim.get_strides();
+	unsigned char* data = (unsigned char*)bpim.get_data();
+	
+	for(k= 2; k > -1; --k){//give image channels are in BGR order, so here it flips to RGB order.
+		for(i = 0; i < h; ++i){
+			for(j = 0; j < w; ++j){
+				out.data[count++] = ((float)*(data + k*strides[2]+ i * strides[0] +j * strides[1]))/255.;//convert image data from boost ndarray type to darknet image type.
+			}
+		}
 	}
-      printf("ret address %p\n", ret);
-      printf("test1 done\n"); 
-     free_image(out);
-  return b;
-	      } 
-	      else{
-      np::ndarray b = np::zeros(bp::make_tuple(1), np::dtype::get_builtin<int>());
-  //pthread_mutex_unlock(&mutex2);   
-     free_image(out);
-      return b;
-		      }
+	
+	int number_of_objects=get_number_of_objects_in_image(&out);//see how many objects are in the given image.
+	if(number_of_objects>0){
+		int result[number_of_objects*6]={0};
+		get_object_info(result);//get class, confidence, coordinates on the image for each object in the image. array is in the order below:
+		//[class id][confidence][left][right][top][bottom]...
+		printf("number_of_objects = %d\n", number_of_objects);
+
+		np::ndarray b = np::zeros(bp::make_tuple(number_of_objects*6), np::dtype::get_builtin<int>());
+		const long int* bs= b.get_strides();
+		int* data = (int*)b.get_data();
+
+		for(int i = 0; i< number_of_objects*6; i++){
+			data[i] = result[i];//convert darknet image type to boost ndarray type.
+		}
+
+		free_image(out);
+
+		return b;
+	}
+	else{//if no object is detected in the image, then simply returns empty ndarray
+		np::ndarray b = np::zeros(bp::make_tuple(0), np::dtype::get_builtin<int>());
+		free_image(out);
+		return b;
+	}
 }
+
 BOOST_PYTHON_MODULE(pyolo){
-  np::initialize();
-  //boost::python::def( "testwrap1", testwrap1, bp::return_value_policy<bp::return_by_value>());
-  bp::def( "init", init);
-  bp::def( "predict", predict);
-  //boost::python::def( "test4wf", &test4wf,bp::return_value_policy<bp::reference_existing_object>());
+	np::initialize();
+	bp::def( "init", init);
+	bp::def( "predict", predict);
 }

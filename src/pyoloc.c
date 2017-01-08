@@ -1,110 +1,103 @@
 #include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
-
 #include "image.h"
 #include "parser.h"
 #include "cuda.h"
 #include "blas.h"
 #include "connected_layer.h"
-
 #include "network.h"
 #include "detection_layer.h"
 #include "cost_layer.h"
 #include "utils.h"
 #include "box.h"
 #include "demo.h"
+
 network net;
 layer l;
 char** names;
 float thresh = .24;
 box *boxes;
 float** probs;
-int imwid;
-	int imhig;
-void cinit(const char* dc, const char* cf, const char* wf)
-{
-gpu_index = 0;
+int image_width;
+int image_hight;
 
-    if(gpu_index >= 0){
-        cuda_set_device(gpu_index);
-    }
-    list *options = read_data_cfg(dc);
-    char *name_list = option_find_str(options, "names", "data/names.list");
-    names = get_labels(name_list);
+void cinit(const char* label_info_file, const char* net_structure_file, const char* weight){
+	gpu_index = 0;
 
-    net = parse_network_cfg(cf);
-    if(wf){
-        load_weights(&net, wf);
-    }
-    set_batch_network(&net, 1);
-   l = net.layers[net.n-1];
-    srand(2222222);
-        boxes = calloc(l.w*l.h*l.n, sizeof(box));
-        probs = calloc(l.w*l.h*l.n, sizeof(float *));
-    int j;
-        for(j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
-
+	if(gpu_index >= 0){
+		cuda_set_device(gpu_index);
 	}
-int cpredict1(image *im)
-{
-imwid = im->w;
-imhig = im->h;
-    clock_t time;
-    char buff[256];
-    char *input = buff;
-    float nms=.4;
-    printf("preimage\n");
-        image sized = resize_image(*im, net.w, net.h);
-    printf("after image\n");
+	//setting up the net
+	list *options = read_data_cfg(label_info_file);
+	char *name_list = option_find_str(options, "names", "data/names.list");
+	names = get_labels(name_list);
 
-        float *X = sized.data;
-    printf("X\n");
-        time=clock();
-        network_predict(net, X);
-        printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
-       free_image(sized);
-        get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0);
-        if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);
-        //draw_detections(im, l.w*l.h*l.n, thresh, boxes, probs, names, alphabet, l.classes);
-int num = l.w*l.h*l.n;
-int si=0;
-for(int j = 0; j< num; j++)
-{
-  int class = max_index(probs[j], l.classes);
-  float prob = probs[j][class];
-	if(prob > thresh){
-      si++;       
-      printf("%s: %.0f%%\n", names[class], prob*100);
-		}
+	net = parse_network_cfg(net_structure_file);
+	if(weight){
+		load_weights(&net, weight);
 	}
-	if(si == 0){
-        //free(boxes);
-        //free_ptrs((void **)probs, l.w*l.h*l.n);
-		}
-   // free_image(im);
-	return si;
+	set_batch_network(&net, 1);
+	l = net.layers[net.n-1];
+	
+	//prepare arrays for detected object info
+	srand(2222222);
+	boxes = calloc(l.w*l.h*l.n, sizeof(box));//array for the coordinates of the position of the detected object
+	probs = calloc(l.w*l.h*l.n, sizeof(float *));// array for the confidence for each detected object
+	for(int j = 0; j < l.w*l.h*l.n; ++j) probs[j] = calloc(l.classes, sizeof(float *));
 }
-void cpredict2(int ret[]){
-int si = 0;
-int num = l.w*l.h*l.n;
-    for(int i = 0; i < num; ++i){
-            box b = boxes[i];
-        int class = max_index(probs[i], l.classes);
-        float prob = probs[i][class];
-	if(prob > thresh){
-            int left  = (b.x-b.w/2.)*imwid;
-            int right = (b.x+b.w/2.)*imwid;
-            int top   = (b.y-b.h/2.)*imhig;
-            int bot   = (b.y+b.h/2.)*imhig;
-        ret[si++] = class;
-        ret[si++] = (int)(100*prob);
-        ret[si++] = left;
-        ret[si++] = right;
-        ret[si++] = top;
-        ret[si++] = bot;
-        printf("%s: %d %d %d %d %d\n", names[ret[si-6]], ret[si-5], ret[si-4], ret[si-3], ret[si-2], ret[si-1]);
+
+int get_number_of_objects_in_image(image *im){
+	image_width = im->w;
+	image_hight = im->h;
+	clock_t time;
+	char buff[256];
+	char *input = buff;
+	float nms=.4;
+
+	image sized = resize_image(*im, net.w, net.h);//the net can only take the fixed size image. so the given image with the varying size has to be adjusted.
+
+	float *X = sized.data;
+	time=clock();
+	network_predict(net, X);
+	printf("Predicted in %f seconds.\n", sec(clock()-time));
+	free_image(sized);
+	get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0);
+	if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);// non maxima supression
+
+	int num = l.w*l.h*l.n;//total number of detection candidates
+	int number_of_objects=0;
+
+	for(int j = 0; j< num; j++){
+	int class = max_index(probs[j], l.classes);
+	float prob = probs[j][class];
+
+	if(prob > thresh){// thresholding the candidates to choose the detection result with confidence larger than the threshold
+		number_of_objects++;
+		printf("%s: %.0f%%\n", names[class], prob*100);
 		}
+	}
+	return number_of_objects;
+}
+void get_object_info(int ret[]){
+	int number_of_objects = 0;
+	int num = l.w*l.h*l.n;
+
+	for(int i = 0; i < num; ++i){
+		box b = boxes[i];
+		int class = max_index(probs[i], l.classes);//decide which class the object belongs to
+		float prob = probs[i][class];//how confident is it?
+		if(prob > thresh){
+			int left	= (b.x-b.w/2.)*image_width;
+			int right = (b.x+b.w/2.)*image_width;
+			int top	 = (b.y-b.h/2.)*image_hight;
+			int bot	 = (b.y+b.h/2.)*image_hight;
+			ret[number_of_objects++] = class;
+			ret[number_of_objects++] = (int)(100*prob);
+			ret[number_of_objects++] = left;
+			ret[number_of_objects++] = right;
+			ret[number_of_objects++] = top;
+			ret[number_of_objects++] = bot;
 		}
-    printf("cpredict2 done\n");
+	}
 }
