@@ -38,7 +38,7 @@ COMMON+= `pkg-config --cflags opencv`
 endif
 
 ifeq ($(GPU), 1) 
-COMMON+= -DGPU -I/usr/local/cuda/include/ -I$(shell pwd)/darknet/src/
+COMMON+= -DGPU -I/usr/local/cuda/include/ -I$(VPATH)
 CFLAGS+= -DGPU
 LDFLAGS+= -L/usr/local/cuda/lib64 -lcuda -lcudart -lcublas -lcurand
 endif
@@ -64,7 +64,7 @@ CVFLAGS= `pkg-config --libs opencv`
 BOOSTFLAGS= -lboost_python -lboost_numpy
 export PATH := /usr/local/cuda/bin:$(PATH)
 $(tn).so: $(OBJS)
-	g++ -g -w -I/usr/local/cuda/include/ -I/usr/include/python2.7 -I$(shell pwd)/darknet/src  -Wall -fPIC  -Ofast -c ./src/$(tn).cpp -o obj/$(tn).o
+	g++ -g -w -I/usr/local/cuda/include/ -I/usr/include/python2.7 -I$(VPATH)  -Wall -fPIC  -Ofast -c ./src/$(tn).cpp -o obj/$(tn).o
 	$(GCC) -shared -Wl,-soname,$@ -o $@ $^ ./obj/$(tn).o $(BOOSTFLAGS) $(CVFLAGS)  $(LDFLAGS)
 
 
