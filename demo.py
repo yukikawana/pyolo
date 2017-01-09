@@ -12,6 +12,10 @@ pyolo.init(ini, cfg, w)  # initialize the net
 while(cap0.isOpened()):
     ret0, frame0 = cap0.read()
     result = pyolo.predict(frame0)
+    """
+    result is a 2-dimensional INT array and each row contains following information in order of
+    [class id][confidence][left][right][top][bottom]
+    """
 
     if len(result) > 0:  # if object is detected
         for id in range(len(result)):
@@ -25,7 +29,7 @@ while(cap0.isOpened()):
             bottom = result_by_id[5]
             cv.rectangle(frame0, (left, top), (right, bottom), (0, 0, 255), 2)
     cv.imshow('frame0', frame0)
-    if cv.waitKey(10) & 0xFF == ord('q'):
+    if cv.waitKey(1) & 0xFF == ord('q'):
         break
 
 cap0.release()
