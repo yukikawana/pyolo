@@ -6,7 +6,7 @@ cap0 = cv.VideoCapture(0)
 
 ini = 'coco_pyolo.data'  # object category info, etc.
 cfg = './darknet/cfg/yolo.cfg'  # network structure
-w = '../darknet/yolo.weights'  # lerant weight. need to wget http://pjreddie.com/media/files/yolo.weights
+w = './darknet/yolo.weights'  # lerant weight. need to wget http://pjreddie.com/media/files/yolo.weights
 pyolo.init(ini, cfg, w)  # initialize the net
 
 while(cap0.isOpened()):

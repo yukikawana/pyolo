@@ -21,6 +21,7 @@ python wrapper for darknet yolo detector
     
 2. get the learnt weight of yolo. 
      ```
+     $ cd darknet
      $ wget http://pjreddie.com/media/files/yolo.weights
      ```
      
