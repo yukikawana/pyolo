@@ -2,6 +2,7 @@ GPU=1
 CUDNN=1
 OPENCV=0
 DEBUG=0
+TIME=0
 
 ARCH= \
       -gencode arch=compute_30,code=sm_30 \
@@ -24,8 +25,11 @@ COMMON=
 CFLAGS=-fPIC -Wall -Wfatal-errors 
 
 ifeq ($(DEBUG), 1) 
-# OPTS=-O0 -g
 OPTS= -g
+endif
+
+ifeq ($(TIME), 1) 
+OPTS+= -DTIME
 endif
 
 CFLAGS+=$(OPTS)
@@ -64,7 +68,7 @@ CVFLAGS= `pkg-config --libs opencv`
 BOOSTFLAGS= -lboost_python -lboost_numpy
 export PATH := /usr/local/cuda/bin:$(PATH)
 $(tn).so: $(OBJS)
-	g++ -g -w -I/usr/local/cuda/include/ -I/usr/include/python2.7 -I$(VPATH)  -Wall -fPIC  -Ofast -c ./src/$(tn).cpp -o obj/$(tn).o
+	g++ -g -w -I/usr/local/cuda/include/ -I/usr/include/python2.7 -I$(VPATH)  -Wall -fPIC $(OPTS) -c ./src/$(tn).cpp -o obj/$(tn).o
 	$(GCC) -shared -Wl,-soname,$@ -o $@ $^ ./obj/$(tn).o $(BOOSTFLAGS) $(CVFLAGS)  $(LDFLAGS)
 
 

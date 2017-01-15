@@ -4,6 +4,7 @@
 #include <opencv2/core/core.hpp>
 #include <string.h>
 #include <pthread.h>
+#include <time.h>
 
 extern "C"{
 #include <image.h>
@@ -33,7 +34,9 @@ np::ndarray predict(np::ndarray &bpim){
 	
 	const long int* strides = bpim.get_strides();
 	unsigned char* data = (unsigned char*)bpim.get_data();
-	
+	#ifdef TIME
+		clock_t start = clock();
+	#endif
 	for(k= 2; k > -1; --k){//give image channels are in BGR order, so here it flips to RGB order.
 		for(i = 0; i < h; ++i){
 			for(j = 0; j < w; ++j){
@@ -41,23 +44,47 @@ np::ndarray predict(np::ndarray &bpim){
 			}
 		}
 	}
+	#ifdef TIME
+		clock_t end = clock();
+		printf("# copy input image to darknet image format takes %f sec\n",(double)(end-start)/CLOCKS_PER_SEC);
+	#endif
 	
+	#ifdef TIME
+		start = clock();
+	#endif
 	int number_of_objects=get_number_of_objects_in_image(&out);//see how many objects are in the given image.
+	#ifdef TIME
+		end = clock();
+		printf("# to get number of objects in a image takes %f sec\n",(double)(end-start)/CLOCKS_PER_SEC);
+	#endif
 	if(number_of_objects>0){
 		int result[number_of_objects*6]={0};
+	#ifdef TIME
+		start = clock();
+	#endif
 		get_object_info(result);//get class, confidence, coordinates on the image for each object in the image. array is in the order below:
+	#ifdef TIME
+		end = clock();
+		printf("# to get object info takes %f sec\n",(double)(end-start)/CLOCKS_PER_SEC);
+	#endif
 		//[class id][confidence][left][right][top][bottom]...
-		printf("number_of_objects = %d\n", number_of_objects);
 
 		np::ndarray b = np::zeros(bp::make_tuple(number_of_objects,6), np::dtype::get_builtin<int>());
 		const long int* bs= b.get_strides();
 		int* data = (int*)b.get_data();
 
+	#ifdef TIME
+		start = clock();
+	#endif
 		for(int i = 0; i< number_of_objects; i++){
 			for(int j = 0; j< 6; j++){
 				b[i][j] = result[i*6+j];//convert darknet image type to boost ndarray type.
 			}
 		}
+	#ifdef TIME
+		end = clock();
+		printf("# make array with result takes %f sec\n",(double)(end-start)/CLOCKS_PER_SEC);
+	#endif
 
 
 		free_image(out);

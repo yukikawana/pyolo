@@ -50,33 +50,65 @@ void cinit(const char* label_info_file, const char* net_structure_file, const ch
 int get_number_of_objects_in_image(image *im){
 	image_width = im->w;
 	image_hight = im->h;
+	image sized = *im;
 	clock_t time;
 	char buff[256];
 	char *input = buff;
 	float nms=.4;
 
-	image sized = resize_image(*im, net.w, net.h);//the net can only take the fixed size image. so the given image with the varying size has to be adjusted.
+	#ifdef TIME
+		clock_t start = clock();
+	#endif
+	// image sized = resize_image(*im, net.w, net.h);//the net can only take the fixed size image. so the given image with the varying size has to be adjusted.
+	#ifdef TIME
+		clock_t end = clock();
+		printf("## resizing image takes %f sec\n",(double)(end-start)/CLOCKS_PER_SEC);
+	#endif
 
 	float *X = sized.data;
-	time=clock();
+	#ifdef TIME
+		time=clock();
+	#endif
 	network_predict(net, X);
-	printf("Predicted in %f seconds.\n", sec(clock()-time));
-	free_image(sized);
+	#ifdef TIME
+		printf("## Predicted in %f seconds.\n", sec(clock()-time));
+	#endif
+	#ifdef TIME
+		start = clock();
+	#endif
 	get_region_boxes(l, 1, 1, thresh, probs, boxes, 0, 0);
-	if (nms) do_nms_sort(boxes, probs, l.w*l.h*l.n, l.classes, nms);// non maxima supression
+	#ifdef TIME
+		end = clock();
+		printf("## get region box takes %f sec\n",(double)(end-start)/CLOCKS_PER_SEC);
+	#endif
+
+	#ifdef TIME
+		start = clock();
+	#endif
+	if (nms) do_nms(boxes, probs, l.w*l.h*l.n, l.classes, nms);// non maxima supression
+	#ifdef TIME
+		end = clock();
+		printf("## nms takes %f sec\n",(double)(end-start)/CLOCKS_PER_SEC);
+	#endif
 
 	int num = l.w*l.h*l.n;//total number of detection candidates
 	int number_of_objects=0;
 
+	#ifdef TIME
+		start = clock();
+	#endif
 	for(int j = 0; j< num; j++){
 	int class = max_index(probs[j], l.classes);
 	float prob = probs[j][class];
 
 	if(prob > thresh){// thresholding the candidates to choose the detection result with confidence larger than the threshold
 		number_of_objects++;
-		printf("%s: %.0f%%\n", names[class], prob*100);
 		}
 	}
+	#ifdef TIME
+		end = clock();
+		printf("## make result array takes %f sec\n",(double)(end-start)/CLOCKS_PER_SEC);
+	#endif
 	return number_of_objects;
 }
 void get_object_info(int ret[]){
