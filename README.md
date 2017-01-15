@@ -35,9 +35,9 @@ python wrapper for darknet yolo detector
      ori_img = cv2.imread('./darknet/data/person.jpg')
      img = cv2.resize(ori_img, (416, 416))
      
-     pyolo.predict(img)
-     
+     result = pyolo.predict(img)
      result_by_id = result[0]
+     
      xscale = float(ori_img.shape[1])/float(img.shape[1])
      yscale = float(ori_img.shape[0])/float(img.shape[0])
      
