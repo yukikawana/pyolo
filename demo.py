@@ -12,7 +12,7 @@ cap0 = cv.VideoCapture(0)
 
 ini = 'coco_pyolo.data'  # object category info, etc.
 cfg = './darknet/cfg/yolo.cfg'  # network structure
-w = './darknet/yolo.weights'  # lerant weight. need to wget http://pjreddie.com/media/files/yolo.weights
+w = '../darknet/yolo.weights'  # lerant weight. need to wget http://pjreddie.com/media/files/yolo.weights
 names = './darknet/data/coco.names'  # object category list
 
 object_category = []
@@ -46,11 +46,11 @@ while(cap0.isOpened()):
             bottom = int(result_by_id[5] * yscale)
 
             cv.rectangle(frame0, (left, top), (right, bottom), (0, 0, 255), 2)
+            print object_category[result_by_id[0]], ': ', result_by_id[1], '%'
     cv.imshow('frame0', frame0)
     if cv.waitKey(1) & 0xFF == ord('q'):
         break
     elapsed = time.time() - start
-    print object_category[result_by_id[0]], ': ', result_by_id[1], '%'
     print ("processed at {0}".format(1 / elapsed) + "[fps]")
 
 cap0.release()
