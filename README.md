@@ -31,15 +31,23 @@ python wrapper for darknet yolo detector
      import cv2
      
      pyolo.init('coco_pyolo.data', './darknet/cfg/yolo.cfg', 'yolo.weights')
-     img = cv2.imread('./darknet/data/person.jpg')
-     pyolo.predict(img)
+     
+     ori_img = cv2.imread('./darknet/data/person.jpg')
+     img = cv2.resize(ori_img, (416, 416))
+     
+     result = pyolo.predict(img)
      result_by_id = result[0]
-     left = result_by_id[2]
-     top = result_by_id[4]
-     right = result_by_id[3]
-     bottom = result_by_id[5]
-     cv2.rectangle(img, (left, top), (right, bottom), (0, 0, 255), 2)
-     cv2.imshow('detected object', img)
+     
+     xscale = float(ori_img.shape[1])/float(img.shape[1])
+     yscale = float(ori_img.shape[0])/float(img.shape[0])
+     
+     left = int(result_by_id[2]*xscale)
+     top = int(result_by_id[4]*yscale)
+     right = int(result_by_id[3]*xscale)
+     bottom = int(result_by_id[5]*yscale)
+     
+     cv2.rectangle(ori_img, (left, top), (right, bottom), (0, 0, 255), 2)
+     cv2.imshow('detected object', ori_img)
      ```
      see more example in demo.py
 
